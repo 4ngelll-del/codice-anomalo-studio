@@ -168,55 +168,62 @@ export function resolvePhotoForTopic(carousel = {}, slide = {}, role = 'primary'
 
   // 1. Jacobo Grinberg / Consciencia / Portales
   if (textBlob.includes('grinberg') || textBlob.includes('sintérg') || textBlob.includes('sinterg') || textBlob.includes('chaman') || textBlob.includes('conscien')) {
-    if (role === 'secondary') return getPhotoDataUri('photo_grinberg_candle_portal', 'photo_grinberg_portrait_syntergic');
-    return getPhotoDataUri('photo_grinberg_portrait_syntergic', 'photo_biolab_culture');
+    if (role === 'secondary') return getPhotoDataUri('photo_electron_microscope', 'photo_grinberg_syntergic');
+    return getPhotoDataUri('photo_grinberg_syntergic');
   }
 
   // 2. Tiempo / Neurociencia / Memoria / Matusalén / Reloj
   if (textBlob.includes('tiempo') || textBlob.includes('2000') || textBlob.includes('reloj') || textBlob.includes('memoria') || textBlob.includes('psicól')) {
-    return getPhotoDataUri('photo_hourglass_time_dilation', 'photo_nasa_earth_night_lights');
+    if (role === 'secondary') return getPhotoDataUri('photo_nasa_earth_night');
+    return getPhotoDataUri('photo_hourglass_time');
   }
 
-  // 3. Biocomputadoras / Organoides / Neuronas Vivas / Células / Placas
+  // 3. Biocomputadoras / Organoides / Neuronas Vivas / Células / Placas / FinalSpark
   if (textBlob.includes('organoid') || textBlob.includes('neurona') || textBlob.includes('cerebro') || textBlob.includes('biocómputo') || textBlob.includes('dishbrain') || textBlob.includes('finalspark') || textBlob.includes('xenobot')) {
-    return getPhotoDataUri('photo_biolab_culture', 'archetype_traselvelo_biolab');
+    if (role === 'secondary') return getPhotoDataUri('photo_electron_microscope');
+    return getPhotoDataUri('photo_organoid_biocomputer');
   }
 
   // 4. Cuevas / Fosas / Lagos / Movile / Ecosistemas Extremos
   if (textBlob.includes('movile') || textBlob.includes('cueva') || textBlob.includes('ácido') || textBlob.includes('natron') || textBlob.includes('kola') || textBlob.includes('abism')) {
-    return getPhotoDataUri('archetype_traselvelo_biolab', 'photo_biolab_culture');
+    if (role === 'secondary') return getPhotoDataUri('photo_electron_microscope');
+    return getPhotoDataUri('photo_underground_cave');
   }
 
-  // 5. Satélites / Órbita / Reentry / Arecibo / Caída Espacial / Señales
+  // 5. Satélites / Órbita / Reentry / Arecibo / Caída Espacial / Señales / Antenas
   if (textBlob.includes('satél') || textBlob.includes('satel') || textBlob.includes('reentry') || textBlob.includes('arecibo') || textBlob.includes('caída') || textBlob.includes('nasa') || textBlob.includes('objeto') || textBlob.includes('láser') || textBlob.includes('psyche')) {
-    return getPhotoDataUri('photo_nasa_satellite_reentry', 'photo_earth_orbit_satellite');
+    if (role === 'secondary') return getPhotoDataUri('photo_nasa_earth_aurora');
+    return getPhotoDataUri('photo_deep_space_antenna');
   }
 
   // 6. Agujeros Negros / Multiverso / Boötes / Saturno / Cosmos
   if (textBlob.includes('agujero negro') || textBlob.includes('universo') || textBlob.includes('multiverso') || textBlob.includes('boötes') || textBlob.includes('bootes') || textBlob.includes('saturno') || textBlob.includes('vacío') || textBlob.includes('vacio')) {
-    if (role === 'splitRight') return getPhotoDataUri('photo_blackhole_multiverse_split', 'photo_nasa_saturn_rings');
-    return getPhotoDataUri('photo_nasa_saturn_rings', 'photo_earth_orbit_satellite');
+    if (role === 'splitRight') return getPhotoDataUri('photo_nasa_saturn');
+    if (role === 'secondary') return getPhotoDataUri('photo_nasa_deep_field');
+    return getPhotoDataUri('photo_nasa_blackhole');
   }
 
   // 7. Inteligencia Artificial / Silicio / GNoME / DeepMind / Chips
   if (textBlob.includes('gnome') || textBlob.includes('deepmind') || textBlob.includes('inteligencia') || textBlob.includes('algoritmo') || textBlob.includes('silicio') || textBlob.includes('cristal') || textBlob.includes('diamante')) {
-    return getPhotoDataUri('photo_ai_executive_editorial', 'photo_quantum_core_3d');
+    if (role === 'secondary') return getPhotoDataUri('photo_datacenter_servers');
+    return getPhotoDataUri('photo_electron_microscope');
   }
 
   // 8. Internet Muerto / Servidores / Ciberseguridad / Redes / Cicada
   if (textBlob.includes('internet') || textBlob.includes('bot') || textBlob.includes('cicada') || textBlob.includes('servidor') || textBlob.includes('red') || textBlob.includes('ciber')) {
-    return getPhotoDataUri('photo_evidence_datacenter_servers', 'photo_tech_cyber_eye');
+    if (role === 'secondary') return getPhotoDataUri('photo_deep_space_antenna');
+    return getPhotoDataUri('photo_datacenter_servers');
   }
 
   // Fallbacks por nicho
   if (carousel.niche === 'ESPACIO' || carousel.niche === 'COSMOLOGIA') {
-    return getPhotoDataUri('photo_earth_orbit_satellite', 'photo_nasa_earth_night_lights');
+    return getPhotoDataUri('photo_nasa_earth_aurora');
   }
   if (carousel.niche === 'MISTERIOS' || carousel.niche === 'INSOLITO') {
-    return getPhotoDataUri('photo_quantum_core_3d', 'photo_biolab_culture');
+    return getPhotoDataUri('photo_underground_cave');
   }
 
-  return getPhotoDataUri('photo_biolab_culture');
+  return getPhotoDataUri('photo_organoid_biocomputer');
 }
 
 // ----------------------------------------------------------------------------
@@ -345,8 +352,8 @@ function renderCoverIngeniaPurpura(carousel, slide, niche) {
     <!-- Gradiente multicapa de fundido a negro puro -->
     <rect x="0" y="480" width="1080" height="305" fill="url(#fadeToBlackGrad)" />
     <rect x="0" y="780" width="1080" height="570" fill="#000000" />
-    <!-- Medallón circular izquierdo con fotografía y flecha blanca curva (IMG_0517) -->
-    ${renderCutoutMedallion({ cx: 215, cy: 560, r: 150, photoKey: 'photo_tech_cyber_eye', withArrow: true, arrowSide: 'right' })}
+    <!-- Medallón circular izquierdo con micrografía electrónica y flecha blanca curva -->
+    ${renderCutoutMedallion({ cx: 215, cy: 560, r: 150, photoKey: 'photo_electron_microscope', withArrow: true, arrowSide: 'right' })}
     <!-- Línea divisoria central con emblema oficial Códice Anómalo -->
     <g transform="translate(540, 736)">
       ${renderBrandEmblem(-162, 0, 20, accent, 'diamond')}
