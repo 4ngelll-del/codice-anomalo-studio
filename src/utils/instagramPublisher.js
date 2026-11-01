@@ -9,7 +9,8 @@ import { buildWeekBatch, NICHES, DEFAULT_SLOTS } from '../data/weeklyBatch.js';
 
 export const INSTAGRAM_GRAPH_API_VERSION = 'v21.0';
 export const INSTAGRAM_GRAPH_BASE_URL = `https://graph.facebook.com/${INSTAGRAM_GRAPH_API_VERSION}`;
-export const INSTAGRAM_PUBLIC_BASE_URL = 'https://codice-anomalo-studio.4ngelll-200.workers.dev';
+export const INSTAGRAM_PUBLIC_BASE_URL = 'https://4ngelll-del.github.io/codice-anomalo-studio';
+export const CLOUDFLARE_WORKER_URL = 'https://codice-anomalo-studio.4ngelll-200.workers.dev';
 
 /**
  * Kit Maestro de Identidad Visual, Biografía SEO, Highlights y Enlaces Públicos
@@ -50,10 +51,10 @@ export const INSTAGRAM_PROFILE_KIT = {
     '👇 Comenta "CODICE" o entra aquí:'
   ].join('\n'),
   profileAssets: {
-    avatarNeon: '/ig-profile/avatar-principal.png',
-    avatarGold: '/ig-profile/avatar-dorado.png',
-    banner: '/ig-profile/banner-perfil.png',
-    welcomeStory: '/ig-profile/historia-bienvenida.png',
+    avatarNeon: './ig-profile/avatar-principal.png',
+    avatarGold: './ig-profile/avatar-dorado.png',
+    banner: './ig-profile/banner-perfil.png',
+    welcomeStory: './ig-profile/historia-bienvenida.png',
     avatarNeonUrl: `${INSTAGRAM_PUBLIC_BASE_URL}/ig-profile/avatar-principal.png`,
     avatarGoldUrl: `${INSTAGRAM_PUBLIC_BASE_URL}/ig-profile/avatar-dorado.png`,
     bannerUrl: `${INSTAGRAM_PUBLIC_BASE_URL}/ig-profile/banner-perfil.png`,
@@ -64,7 +65,7 @@ export const INSTAGRAM_PROFILE_KIT = {
     title: 'Foto de Perfil Oficial — Neón Cian & Oro (1080×1080)',
     dimensions: '1080×1080 px (1:1)',
     fileName: '01_FOTO_DE_PERFIL_AVATAR_1080x1080.png',
-    relativePath: '/ig-profile/avatar-principal.png',
+    relativePath: './ig-profile/avatar-principal.png',
     publicUrl: `${INSTAGRAM_PUBLIC_BASE_URL}/ig-profile/avatar-principal.png`,
     description:
       'Emblema oficial de Códice Anómalo en cian cibernético (#00F0FF) y oro cuántico (#F59E0B) sobre obsidiana profunda (#06070B), optimizado para el recorte circular de Instagram.'
@@ -74,7 +75,7 @@ export const INSTAGRAM_PROFILE_KIT = {
     title: 'Foto de Perfil Alternativa — Ojo Dorado Hermético (1080×1080)',
     dimensions: '1080×1080 px (1:1)',
     fileName: '02_FOTO_DE_PERFIL_OJO_DORADO_1080x1080.png',
-    relativePath: '/ig-profile/avatar-dorado.png',
+    relativePath: './ig-profile/avatar-dorado.png',
     publicUrl: `${INSTAGRAM_PUBLIC_BASE_URL}/ig-profile/avatar-dorado.png`,
     description:
       'Variante de prestigio en oro imperial (#F59E0B) para campañas especiales o cuenta secundaria.'
@@ -84,7 +85,7 @@ export const INSTAGRAM_PROFILE_KIT = {
     title: 'Banner Maestro de Cabecera & Fondo Editorial (1920×1080)',
     dimensions: '1920×1080 px (16:9)',
     fileName: '03_BANNER_FONDO_PERFIL_Y_META_1920x1080.png',
-    relativePath: '/ig-profile/banner-perfil.png',
+    relativePath: './ig-profile/banner-perfil.png',
     publicUrl: `${INSTAGRAM_PUBLIC_BASE_URL}/ig-profile/banner-perfil.png`,
     description:
       'Arte conceptual 16:9 para cabecera de Meta Business Suite, Media Kit y portada del repositorio documental.'
@@ -94,7 +95,7 @@ export const INSTAGRAM_PROFILE_KIT = {
     title: 'Portada de Historia Destacada / Bienvenida (1080×1920 9:16)',
     dimensions: '1080×1920 px (9:16)',
     fileName: '04_PORTADA_HISTORIA_BIENVENIDA_1080x1920.png',
-    relativePath: '/ig-profile/historia-bienvenida.png',
+    relativePath: './ig-profile/historia-bienvenida.png',
     publicUrl: `${INSTAGRAM_PUBLIC_BASE_URL}/ig-profile/historia-bienvenida.png`,
     description:
       'Story vertical 9:16 lista para fijar en el primer Highlight con CTA a la palabra clave "CODICE".'
@@ -108,8 +109,8 @@ export const INSTAGRAM_PROFILE_KIT = {
       keyword: 'ORGANOIDE',
       accentColor: '#00F0FF',
       fileName: 'HIGHLIGHT_01_IA_Y_TECH.png',
-      relativePath: '/ig-profile/highlight-1.png',
-      url: '/ig-profile/highlight-1.png',
+      relativePath: './ig-profile/highlight-1.png',
+      url: './ig-profile/highlight-1.png',
       publicUrl: `${INSTAGRAM_PUBLIC_BASE_URL}/ig-profile/highlight-1.png`,
       storyCopy:
         'Servidores biológicos de neuronas humanas (FinalSpark), cristales sintetizados por IA (GNoME) y robots celulares autorreplicantes (Xenobots). Responde "ORGANOIDE" para recibir el índice.'
@@ -122,8 +123,8 @@ export const INSTAGRAM_PROFILE_KIT = {
       keyword: 'MOVILE',
       accentColor: '#10B981',
       fileName: 'HIGHLIGHT_02_INSOLITO.png',
-      relativePath: '/ig-profile/highlight-2.png',
-      url: '/ig-profile/highlight-2.png',
+      relativePath: './ig-profile/highlight-2.png',
+      url: './ig-profile/highlight-2.png',
       publicUrl: `${INSTAGRAM_PUBLIC_BASE_URL}/ig-profile/highlight-2.png`,
       storyCopy:
         'La cueva de Movile sellada por 5.5 millones de años, el reactor nuclear natural de Oklo y el pozo superprofundo de Kola. Responde "MOVILE" para ver las pruebas.'
@@ -136,8 +137,8 @@ export const INSTAGRAM_PROFILE_KIT = {
       keyword: 'ARECIBO',
       accentColor: '#F59E0B',
       fileName: 'HIGHLIGHT_03_MISTERIOS.png',
-      relativePath: '/ig-profile/highlight-3.png',
-      url: '/ig-profile/highlight-3.png',
+      relativePath: './ig-profile/highlight-3.png',
+      url: './ig-profile/highlight-3.png',
       publicUrl: `${INSTAGRAM_PUBLIC_BASE_URL}/ig-profile/highlight-3.png`,
       storyCopy:
         'La señal SHGb02+14a de Arecibo, la anomalía de sonar del Mar Báltico y las cámaras detectadas por muones en Guiza. Responde "ARECIBO" para recibir las fichas forenses.'
@@ -150,8 +151,8 @@ export const INSTAGRAM_PROFILE_KIT = {
       keyword: 'MAPAMUNDI',
       accentColor: '#EC4899',
       fileName: 'HIGHLIGHT_04_COSMOLOGIA.png',
-      relativePath: '/ig-profile/highlight-4.png',
-      url: '/ig-profile/highlight-4.png',
+      relativePath: './ig-profile/highlight-4.png',
+      url: './ig-profile/highlight-4.png',
       publicUrl: `${INSTAGRAM_PUBLIC_BASE_URL}/ig-profile/highlight-4.png`,
       storyCopy:
         'El planisferio polar de Urbano Monte (1587), la ilusión de la bóveda celeste y experimentos geodésicos en la Antártida. Responde "MAPAMUNDI" para descargar los mapas HD.'
@@ -164,8 +165,8 @@ export const INSTAGRAM_PROFILE_KIT = {
       keyword: 'DYSON',
       accentColor: '#8B5CF6',
       fileName: 'HIGHLIGHT_05_MEGA_ING.png',
-      relativePath: '/ig-profile/highlight-5.png',
-      url: '/ig-profile/highlight-5.png',
+      relativePath: './ig-profile/highlight-5.png',
+      url: './ig-profile/highlight-5.png',
       publicUrl: `${INSTAGRAM_PUBLIC_BASE_URL}/ig-profile/highlight-5.png`,
       storyCopy:
         'El ascensor espacial japonés de 96.000 km (Obayashi), discos de cuarzo 5D eternos y las 7 candidatas a Esferas de Dyson. Responde "DYSON" para abrir el expediente.'
@@ -178,8 +179,8 @@ export const INSTAGRAM_PROFILE_KIT = {
       keyword: 'MATUSALEN',
       accentColor: '#3B82F6',
       fileName: 'HIGHLIGHT_06_ESPACIO.png',
-      relativePath: '/ig-profile/highlight-6.png',
-      url: '/ig-profile/highlight-6.png',
+      relativePath: './ig-profile/highlight-6.png',
+      url: './ig-profile/highlight-6.png',
       publicUrl: `${INSTAGRAM_PUBLIC_BASE_URL}/ig-profile/highlight-6.png`,
       storyCopy:
         'El Gran Vacío de Boötes, la Estrella Matusalén (HD 140283) y el púlsar que gira 716 veces por segundo. Responde "MATUSALEN" para abrir el archivo astronómico.'
@@ -192,8 +193,8 @@ export const INSTAGRAM_PROFILE_KIT = {
       keyword: 'CODICE',
       accentColor: '#A855F7',
       fileName: 'HIGHLIGHT_07_DOSSIERS_DM.png',
-      relativePath: '/ig-profile/highlight-7.png',
-      url: '/ig-profile/highlight-7.png',
+      relativePath: './ig-profile/highlight-7.png',
+      url: './ig-profile/highlight-7.png',
       publicUrl: `${INSTAGRAM_PUBLIC_BASE_URL}/ig-profile/highlight-7.png`,
       storyCopy:
         'Acceso directo a los 7 Dossiers Documentales en PDF, papers revisados por pares y el Círculo Interno de Códice Anómalo. Responde "CODICE" y te enviamos la llave por DM.'
@@ -254,7 +255,7 @@ export function getTodayNov01Carousels(
       (sNum) => `${cleanBase}/ig-nov01/${filePrefix}${postNum}-slide${sNum}.png`
     );
     const relativeImagePaths = [1, 2, 3, 4, 5].map(
-      (sNum) => `/ig-nov01/${filePrefix}${postNum}-slide${sNum}.png`
+      (sNum) => `./ig-nov01/${filePrefix}${postNum}-slide${sNum}.png`
     );
 
     return {
