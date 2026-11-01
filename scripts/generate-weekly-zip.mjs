@@ -338,12 +338,10 @@ ${carousel.slides
 
   const zipBuffer = await zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE', compressionOptions: { level: 6 } });
   await fs.writeFile(zipFilePath, zipBuffer);
-  await fs.writeFile(publicZipPath, zipBuffer);
 
   console.log(`✅ Entrega generada exitosamente:`);
   console.log(`   📁 Carpeta descomprimida: ${deliveryPath}`);
   console.log(`   🗜️ Archivo ZIP Maestro:   ${zipFilePath}`);
-  console.log(`   🌐 ZIP en Web App Public: ${publicZipPath}`);
 }
 
 main().catch((err) => {

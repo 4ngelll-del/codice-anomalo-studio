@@ -609,14 +609,14 @@ Devuelve exclusivamente un JSON con title, ctaKeyword, caption y slides (5 diapo
 
           {/* Descarga Directa del Paquete Semanal ZIP */}
           <div className="flex items-center gap-2">
-            <a
-              href="/codice-anomalo-semana-01-21-carruseles.zip"
-              download="ENTREGA_SEMANA_01_CODICE_ANOMALO_21_CARRUSELES.zip"
+            <button
+              onClick={downloadFullWeekZip}
+              disabled={isExportingZip}
               className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 text-xs font-black transition"
             >
               <Package className="w-4 h-4" />
-              Descargar ZIP Pre-Generado (105 PNGs)
-            </a>
+              {isExportingZip ? `Generando ZIP (${zipProgress}%)...` : 'Descargar ZIP Semanal (105 PNGs)'}
+            </button>
           </div>
 
           {/* Navegación Principal */}
