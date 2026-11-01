@@ -6,7 +6,8 @@ import {
   Copy, Check, Download, Share2, Bookmark, MessageCircle, Heart,
   Cpu, Eye, HelpCircle, Compass, Rocket, Orbit, Globe, Play,
   FileCode, GitBranch, CloudLightning, Award,
-  Wand2, ArrowRight, Clock, Video, DollarSign, Image as ImageIcon, Package, UserCheck, Palette
+  Wand2, ArrowRight, Clock, Video, DollarSign, Image as ImageIcon, Package, UserCheck, Palette,
+  Camera, Send, Key, ExternalLink, RefreshCw, AlertCircle
 } from 'lucide-react';
 import {
   NICHES as BASE_NICHES,
@@ -17,6 +18,13 @@ import {
   getAnnualSummary
 } from './data/weeklyBatch.js';
 import { createSlideSvg, ARCHETYPE_META } from './utils/viralSlideSvg.js';
+import {
+  INSTAGRAM_PROFILE_KIT,
+  INSTAGRAM_PUBLIC_BASE_URL,
+  getTodayNov01Carousels,
+  verifyInstagramCredentials,
+  publishCarouselToInstagramGraph
+} from './utils/instagramPublisher.js';
 
 const ICON_MAP = {
   TECH_IA: Cpu,
@@ -176,12 +184,28 @@ export default function App() {
   const annualSummary = useMemo(() => getAnnualSummary(), []);
 
   const [carousels, setCarousels] = useState(() => buildWeekBatch(1, DEFAULT_SLOTS, '@codice.anomalo'));
-  const [activeTab, setActiveTab] = useState('PLANNER'); // PLANNER | EDITOR | ANNUAL | AGENTS | DEPLOY
+  const [activeTab, setActiveTab] = useState('IG_OPERATOR'); // IG_OPERATOR | PLANNER | EDITOR | ANNUAL | AGENTS | DEPLOY
   const [selectedId, setSelectedId] = useState(() => buildWeekBatch(1)[0]?.id || 'ca-2026-w01-1');
   const [activeSlideIdx, setActiveSlideIdx] = useState(0);
   const [nicheFilter, setNicheFilter] = useState('ALL');
   const [dayFilter, setDayFilter] = useState('ALL');
   const [archetypeFilter, setArchetypeFilter] = useState('ALL');
+
+  // Estados del Operador Instagram Graph API (@codice.anomalo) y Lote Hoy 1 Nov 2026
+  const [igUserId, setIgUserId] = useState(() => localStorage.getItem('ca_ig_user_id') || '');
+  const [igAccessToken, setIgAccessToken] = useState(() => localStorage.getItem('ca_ig_access_token') || '');
+  const [igPublicBaseUrl, setIgPublicBaseUrl] = useState(INSTAGRAM_PUBLIC_BASE_URL);
+  const [igPackMode, setIgPackMode] = useState('launch'); // 'launch' (#CA-0001..0003) | 'sunday' (#CA-0019..0021)
+  const [igAccountStatus, setIgAccountStatus] = useState(null);
+  const [isVerifyingIg, setIsVerifyingIg] = useState(false);
+  const [publishingSlot, setPublishingSlot] = useState(null);
+  const [publishLogs, setPublishLogs] = useState([]);
+  const [isDownloadingKitZip, setIsDownloadingKitZip] = useState(false);
+
+  const todayNov01Carousels = useMemo(
+    () => getTodayNov01Carousels(igPublicBaseUrl, igHandle, igPackMode),
+    [igPublicBaseUrl, igHandle, igPackMode]
+  );
 
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   const [aiCustomPrompt, setAiCustomPrompt] = useState('');
@@ -365,6 +389,157 @@ export default function App() {
     a.download = 'CODICE_ANOMALO_PLAN_ANUAL_52_SEMANAS_1092_CARRUSELES.json';
     a.click();
     showToast('✅ Catálogo Anual Completo (1,092 Carruseles / 5,460 Slides) descargado');
+  };
+
+  // ==========================================================================
+  // FUNCIONES DEL OPERADOR DE INSTAGRAM (@codice.anomalo) & HOY 1 NOV 2026
+  // ==========================================================================
+  const handleSaveAndVerifyInstagram = async () => {
+    localStorage.setItem('ca_ig_user_id', igUserId.trim());
+    localStorage.setItem('ca_ig_access_token', igAccessToken.trim());
+    if (!igUserId.trim() || !igAccessToken.trim()) {
+      setIgAccountStatus({
+        ok: false,
+        error: 'Ingresa tu IG_USER_ID (ID de cuenta Instagram Profesional/Creator) y tu IG_ACCESS_TOKEN de Meta Graph API.'
+      });
+      return;
+    }
+    setIsVerifyingIg(true);
+    try {
+      const res = await verifyInstagramCredentials({
+        igUserId: igUserId.trim(),
+        accessToken: igAccessToken.trim()
+      });
+      setIgAccountStatus(res);
+      if (res.ok) {
+        showToast(`✅ Conectado a ${res.account.username} (${res.account.name || 'Instagram Graph API v21.0'})`);
+      } else {
+        showToast(`⚠️ Error de verificación Meta API: ${res.error}`);
+      }
+    } finally {
+      setIsVerifyingIg(false);
+    }
+  };
+
+  const handlePublishSingleNov01Carousel = async (carouselItem) => {
+    localStorage.setItem('ca_ig_user_id', igUserId.trim());
+    localStorage.setItem('ca_ig_access_token', igAccessToken.trim());
+
+    if (!igUserId.trim() || !igAccessToken.trim()) {
+      const msg = `Para autopublicar "${carouselItem.title}" directo en @codice.anomalo vía Meta Graph API v21.0, pega arriba tu IG_USER_ID y tu IG_ACCESS_TOKEN (o descarga el ZIP de las 5 fotos con el botón de al lado).`;
+      setPublishLogs((prev) => [
+        {
+          id: `${Date.now()}-${carouselItem.dossierCode}`,
+          time: new Date().toLocaleTimeString('es-MX'),
+          dossierCode: carouselItem.dossierCode,
+          slot: carouselItem.timeCDMX,
+          ok: false,
+          message: msg
+        },
+        ...prev
+      ]);
+      showToast('🔑 Ingresa tu IG_USER_ID + IG_ACCESS_TOKEN arriba para publicar directo vía API');
+      return;
+    }
+
+    setPublishingSlot(carouselItem.dossierCode);
+    showToast(`🚀 Subiendo 5 imágenes 4:5 de ${carouselItem.dossierCode} a @codice.anomalo...`);
+    try {
+      const result = await publishCarouselToInstagramGraph({
+        igUserId: igUserId.trim(),
+        accessToken: igAccessToken.trim(),
+        imageUrls: carouselItem.imageUrls,
+        caption: carouselItem.caption
+      });
+      setPublishLogs((prev) => [
+        {
+          id: `${Date.now()}-${carouselItem.dossierCode}`,
+          time: new Date().toLocaleTimeString('es-MX'),
+          dossierCode: carouselItem.dossierCode,
+          slot: carouselItem.timeCDMX,
+          ok: true,
+          mediaId: result.publishedMediaId,
+          permalink: result.permalink,
+          message: `Publicado exitosamente en @codice.anomalo (Media ID: ${result.publishedMediaId})`
+        },
+        ...prev
+      ]);
+      showToast(`✅ ¡Carrusel ${carouselItem.dossierCode} publicado en @codice.anomalo!`);
+    } catch (err) {
+      setPublishLogs((prev) => [
+        {
+          id: `${Date.now()}-${carouselItem.dossierCode}`,
+          time: new Date().toLocaleTimeString('es-MX'),
+          dossierCode: carouselItem.dossierCode,
+          slot: carouselItem.timeCDMX,
+          ok: false,
+          message: err.message
+        },
+        ...prev
+      ]);
+      showToast(`❌ Error al publicar ${carouselItem.dossierCode}: ${err.message}`);
+    } finally {
+      setPublishingSlot(null);
+    }
+  };
+
+  const handlePublishAllThreeToday = async () => {
+    for (const item of todayNov01Carousels) {
+      await handlePublishSingleNov01Carousel(item);
+    }
+  };
+
+  const downloadNov01CompleteKitZip = async () => {
+    setIsDownloadingKitZip(true);
+    showToast('📦 Empaquetando Kit de Perfil @codice.anomalo + 15 Fotos de Hoy 1 de Noviembre 2026...');
+    try {
+      const zip = new JSZip();
+      const profileFolder = zip.folder('01_KIT_PERFIL_INSTAGRAM_CODICE_ANOMALO');
+
+      const assetList = [
+        { path: INSTAGRAM_PROFILE_KIT.avatar.relativePath, name: INSTAGRAM_PROFILE_KIT.avatar.fileName },
+        { path: INSTAGRAM_PROFILE_KIT.avatarGold.relativePath, name: INSTAGRAM_PROFILE_KIT.avatarGold.fileName },
+        { path: INSTAGRAM_PROFILE_KIT.banner.relativePath, name: INSTAGRAM_PROFILE_KIT.banner.fileName },
+        { path: INSTAGRAM_PROFILE_KIT.welcomeStory.relativePath, name: INSTAGRAM_PROFILE_KIT.welcomeStory.fileName },
+        ...INSTAGRAM_PROFILE_KIT.highlights.map((h) => ({ path: h.relativePath, name: h.fileName }))
+      ];
+
+      for (const a of assetList) {
+        const res = await fetch(a.path);
+        if (res.ok) {
+          profileFolder.file(a.name, await res.blob());
+        }
+      }
+
+      profileFolder.file(
+        '00_BIO_SEO_Y_CONFIGURACION_PERFIL.txt',
+        `USUARIO: ${INSTAGRAM_PROFILE_KIT.handle}\nNOMBRE SEO: ${INSTAGRAM_PROFILE_KIT.seoName}\nCATEGORÍA: ${INSTAGRAM_PROFILE_KIT.category}\nENLACE BIO: ${INSTAGRAM_PROFILE_KIT.websiteUrl}\n\nBIOGRAFÍA OFICIAL (4 LÍNEAS):\n${INSTAGRAM_PROFILE_KIT.bio}\n`
+      );
+
+      const nov01Folder = zip.folder('02_CARRUSELES_HOY_01_NOVIEMBRE_2026');
+      for (const post of todayNov01Carousels) {
+        const pFolder = nov01Folder.folder(`${post.slotId}_${post.timeCDMX.replace(':', '')}_${post.dossierCode.replace('#', '')}_${post.ctaKeyword}`);
+        for (let i = 0; i < post.relativeImagePaths.length; i++) {
+          const res = await fetch(post.relativeImagePaths[i]);
+          if (res.ok) {
+            pFolder.file(`SLIDE_0${i + 1}_1080x1350.png`, await res.blob());
+          }
+        }
+        pFolder.file(
+          'CAPTION_Y_TITULO_LISTO_PARA_COPIAR.txt',
+          `EXPEDIENTE: ${post.dossierCode}\nTÍTULO: ${post.title}\nHORARIO: Domingo 1 de Noviembre de 2026 — ${post.timeCDMX} (America/Mexico_City)\nPALABRA CLAVE DM: ${post.ctaKeyword}\n\n=== COPIA Y PEGA ESTE CAPTION EN INSTAGRAM ===\n\n${post.caption}\n`
+        );
+      }
+
+      const blob = await zip.generateAsync({ type: 'blob' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'KIT_PERFIL_Y_CARRUSELES_01_NOV_2026_CODICE_ANOMALO.zip';
+      link.click();
+      showToast('✅ Kit Completo (@codice.anomalo + 15 Fotos 1 Nov 2026) descargado');
+    } finally {
+      setIsDownloadingKitZip(false);
+    }
   };
 
   // Integración Gemini IA + Sintetizador Local Gama Alta
@@ -573,6 +748,7 @@ export default function App() {
           {/* Navegación Principal */}
           <nav className="flex items-center gap-1.5 bg-slate-900/90 p-1.5 rounded-xl border border-slate-800 w-full overflow-x-auto">
             {[
+              { id: 'IG_OPERATOR', label: '0. 📸 Operador IG (@codice.anomalo) & Hoy 1 Nov 2026', icon: Camera },
               { id: 'PLANNER', label: `1. Semana ${String(activeWeek).padStart(2, '0')}/52 (21 Carruseles Virales)`, icon: Calendar },
               { id: 'EDITOR', label: '2. Estudio Visual 4:5 (7 Estilos Drive)', icon: Layers },
               { id: 'ANNUAL', label: '3. Plan Anual (52 Semanas / 1,092 Posts)', icon: Sparkles },
@@ -647,6 +823,576 @@ export default function App() {
             </span>
           </div>
         </div>
+
+        {/* ====================================================================
+            VISTA 0: OPERADOR DE INSTAGRAM (@codice.anomalo) + KIT DE PERFIL COMPLETO
+            + AUTOPUBLICACIÓN DE HOY DOMINGO 1 DE NOVIEMBRE DE 2026
+           ==================================================================== */}
+        {activeTab === 'IG_OPERATOR' && (
+          <div className="space-y-6">
+            {/* Banner Superior de Bienvenida y Descarga Maestra */}
+            <div className="p-6 rounded-2xl bg-gradient-to-r from-purple-950/90 via-slate-900/95 to-cyan-950/80 border border-cyan-500/40 shadow-2xl flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                    ● Cuenta Oficial Creada: @codice.anomalo
+                  </span>
+                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-cyan-500/20 text-cyan-200 border border-cyan-500/40">
+                    Lanzamiento: Hoy Domingo 1 de Noviembre de 2026
+                  </span>
+                </div>
+                <h2 className="text-xl sm:text-2xl font-black text-white">
+                  Centro de Operación Integral de Instagram (@codice.anomalo)
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-300 max-w-3xl">
+                  Aquí tienes <strong>todo el diseño visual de tu perfil</strong> (Foto de Perfil 1080×1080, Fondo/Banner detrás del perfil 1920×1080, Historia de Bienvenida 9:16, las 7 Portadas de Destacadas, Nombre SEO y Biografía lista para copiar) y el <strong>Motor de Autopublicación Oficial Meta Graph API v21.0</strong> para subir los 3 carruseles de hoy <strong>1 de noviembre de 2026</strong>.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+                <button
+                  onClick={downloadNov01CompleteKitZip}
+                  disabled={isDownloadingKitZip}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 hover:opacity-95 text-slate-950 font-black text-xs shadow-lg shadow-cyan-500/25 transition"
+                >
+                  <Download className="w-4 h-4" />
+                  {isDownloadingKitZip
+                    ? 'Empaquetando Kit Completo...'
+                    : 'Descargar TODO (Perfil + 15 Fotos 1 Nov 2026 .ZIP)'}
+                </button>
+                <a
+                  href="https://www.instagram.com/codice.anomalo/"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-700 text-cyan-300 font-bold text-xs transition"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  Abrir @codice.anomalo
+                </a>
+              </div>
+            </div>
+
+            {/* SECCIÓN 1: SIMULADOR DEL PERFIL DE INSTAGRAM + FOTOS DE PERFIL, FONDO Y BIOGRAFÍA */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              {/* Columna Izquierda (7 cols): Arte Visual del Perfil (Banner detrás del perfil, 2 Avatares y Portada 9:16) */}
+              <div className="lg:col-span-7 space-y-4">
+                <div className="p-5 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-4">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div>
+                      <span className="text-[11px] font-mono uppercase text-cyan-400">
+                        PASO 1 // IDENTIDAD VISUAL DE @codice.anomalo
+                      </span>
+                      <h3 className="text-lg font-black text-white">
+                        Fondo Detrás del Perfil + Foto de Perfil Oficial + Story de Bienvenida
+                      </h3>
+                    </div>
+                    <span className="text-[11px] font-mono text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/30">
+                      Resolución Nativa 1080p PNG
+                    </span>
+                  </div>
+
+                  {/* Vista Previa Combinada: Banner detrás del perfil + Avatar Circular superpuesto */}
+                  <div className="relative rounded-2xl overflow-hidden border border-cyan-500/40 bg-slate-950 shadow-2xl">
+                    <img
+                      src={INSTAGRAM_PROFILE_KIT.banner.relativePath}
+                      alt="Banner detrás del perfil @codice.anomalo"
+                      className="w-full h-44 sm:h-56 object-cover"
+                    />
+                    <div className="p-4 sm:p-5 bg-slate-950/95 border-t border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div className="flex items-center gap-4 -mt-12 sm:-mt-14">
+                        <img
+                          src={INSTAGRAM_PROFILE_KIT.avatar.relativePath}
+                          alt="Foto de perfil @codice.anomalo"
+                          className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-4 border-[#07080D] shadow-xl object-cover bg-slate-900"
+                        />
+                        <div className="pt-8 sm:pt-10">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-base sm:text-lg font-black text-white font-mono">
+                              codice.anomalo
+                            </span>
+                            <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-cyan-400 text-slate-950 text-[10px] font-black">
+                              ✓
+                            </span>
+                          </div>
+                          <p className="text-xs font-bold text-amber-300">
+                            {INSTAGRAM_PROFILE_KIT.seoName}
+                          </p>
+                          <p className="text-[11px] text-slate-400">
+                            {INSTAGRAM_PROFILE_KIT.category}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap gap-2">
+                        <a
+                          href={INSTAGRAM_PROFILE_KIT.avatar.relativePath}
+                          download={INSTAGRAM_PROFILE_KIT.avatar.fileName}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-200 text-xs font-bold"
+                        >
+                          <Download className="w-3.5 h-3.5" /> Foto Perfil (Neón)
+                        </a>
+                        <a
+                          href={INSTAGRAM_PROFILE_KIT.banner.relativePath}
+                          download={INSTAGRAM_PROFILE_KIT.banner.fileName}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/40 text-purple-200 text-xs font-bold"
+                        >
+                          <Download className="w-3.5 h-3.5" /> Fondo / Banner
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Tarjetas Individuales de los 4 Activos Principales del Perfil */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {[
+                      {
+                        title: 'Foto Perfil Oficial (Neón)',
+                        dim: '1080×1080 (1:1)',
+                        src: INSTAGRAM_PROFILE_KIT.avatar.relativePath,
+                        fileName: INSTAGRAM_PROFILE_KIT.avatar.fileName
+                      },
+                      {
+                        title: 'Foto Perfil Alterna (Oro)',
+                        dim: '1080×1080 (1:1)',
+                        src: INSTAGRAM_PROFILE_KIT.avatarGold.relativePath,
+                        fileName: INSTAGRAM_PROFILE_KIT.avatarGold.fileName
+                      },
+                      {
+                        title: 'Fondo Detrás del Perfil',
+                        dim: '1920×1080 (16:9)',
+                        src: INSTAGRAM_PROFILE_KIT.banner.relativePath,
+                        fileName: INSTAGRAM_PROFILE_KIT.banner.fileName
+                      },
+                      {
+                        title: 'Story Fijada Bienvenida',
+                        dim: '1080×1920 (9:16)',
+                        src: INSTAGRAM_PROFILE_KIT.welcomeStory.relativePath,
+                        fileName: INSTAGRAM_PROFILE_KIT.welcomeStory.fileName
+                      }
+                    ].map((asset, i) => (
+                      <div
+                        key={i}
+                        className="p-2.5 rounded-xl bg-slate-950/90 border border-slate-800 flex flex-col justify-between gap-2"
+                      >
+                        <div className="aspect-square rounded-lg overflow-hidden bg-slate-900 border border-slate-800">
+                          <img
+                            src={asset.src}
+                            alt={asset.title}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-white truncate">{asset.title}</p>
+                          <p className="text-[10px] font-mono text-slate-400">{asset.dim}</p>
+                        </div>
+                        <a
+                          href={asset.src}
+                          download={asset.fileName}
+                          className="w-full inline-flex items-center justify-center gap-1 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-300 text-[11px] font-bold transition"
+                        >
+                          <Download className="w-3 h-3" /> Descargar PNG
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Columna Derecha (5 cols): Textos Oficiales del Perfil para Copiar en 1 Clic */}
+              <div className="lg:col-span-5 space-y-4">
+                <div className="p-5 rounded-2xl bg-slate-900/90 border border-amber-500/30 space-y-3.5">
+                  <div>
+                    <span className="text-[11px] font-mono uppercase text-amber-400">
+                      PASO 2 // CONFIGURACIÓN DE BIOGRAFÍA Y SEO EN INSTAGRAM
+                    </span>
+                    <h3 className="text-lg font-black text-white">
+                      Datos Listos para Pegar en "Editar Perfil" de @codice.anomalo
+                    </h3>
+                  </div>
+
+                  {/* Nombre SEO */}
+                  <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-mono uppercase text-slate-400">
+                        Nombre del Perfil (Optimizado para Búsqueda SEO en IG):
+                      </span>
+                      <button
+                        onClick={() => copyToClipboard(INSTAGRAM_PROFILE_KIT.seoName, 'seo-name')}
+                        className="text-xs font-bold text-cyan-400 hover:underline flex items-center gap-1"
+                      >
+                        {copiedId === 'seo-name' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                        Copiar Nombre
+                      </button>
+                    </div>
+                    <p className="text-xs sm:text-sm font-bold text-white">{INSTAGRAM_PROFILE_KIT.seoName}</p>
+                  </div>
+
+                  {/* Categoría */}
+                  <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-mono uppercase text-slate-400">
+                        Categoría de Cuenta Profesional (Creador / Empresa):
+                      </span>
+                      <button
+                        onClick={() => copyToClipboard(INSTAGRAM_PROFILE_KIT.category, 'ig-cat')}
+                        className="text-xs font-bold text-cyan-400 hover:underline flex items-center gap-1"
+                      >
+                        {copiedId === 'ig-cat' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                        Copiar
+                      </button>
+                    </div>
+                    <p className="text-xs font-bold text-emerald-300">{INSTAGRAM_PROFILE_KIT.category}</p>
+                  </div>
+
+                  {/* Biografía de 4 líneas */}
+                  <div className="p-3 rounded-xl bg-slate-950 border border-cyan-500/40 space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-mono uppercase text-cyan-300">
+                        Biografía Oficial (4 Líneas de Alta Conversión — 148 caracteres):
+                      </span>
+                      <button
+                        onClick={() => copyToClipboard(INSTAGRAM_PROFILE_KIT.bio, 'ig-bio')}
+                        className="px-2.5 py-1 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-200 text-xs font-bold flex items-center gap-1"
+                      >
+                        {copiedId === 'ig-bio' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                        Copiar Biografía
+                      </button>
+                    </div>
+                    <pre className="text-xs text-slate-100 font-sans whitespace-pre-wrap leading-relaxed bg-slate-900/90 p-2.5 rounded-lg border border-slate-800">
+                      {INSTAGRAM_PROFILE_KIT.bio}
+                    </pre>
+                  </div>
+
+                  {/* Enlace Web */}
+                  <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-mono uppercase text-slate-400">
+                        Enlace de Bóveda (Sitio Web en Perfil):
+                      </span>
+                      <button
+                        onClick={() => copyToClipboard(INSTAGRAM_PROFILE_KIT.websiteUrl, 'ig-url')}
+                        className="text-xs font-bold text-cyan-400 hover:underline flex items-center gap-1"
+                      >
+                        {copiedId === 'ig-url' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                        Copiar URL
+                      </button>
+                    </div>
+                    <p className="text-xs font-mono text-amber-300 break-all">{INSTAGRAM_PROFILE_KIT.websiteUrl}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* SECCIÓN 2: LAS 7 PORTADAS DE HISTORIAS DESTACADAS (HIGHLIGHTS 1080x1920) */}
+            <div className="p-5 rounded-2xl bg-slate-900/90 border border-purple-500/30 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <span className="text-[11px] font-mono uppercase text-purple-300">
+                    PASO 3 // LAS 7 HISTORIAS DESTACADAS (HIGHLIGHTS OFICIALES 1080×1920)
+                  </span>
+                  <h3 className="text-lg font-black text-white">
+                    Portadas de Destacadas Listas para Subir a @codice.anomalo
+                  </h3>
+                </div>
+                <span className="text-xs text-slate-400">
+                  Haz clic en cada portada para descargar el PNG 9:16 o copiar el texto de su primera historia
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+                {INSTAGRAM_PROFILE_KIT.highlights.map((hl) => (
+                  <div
+                    key={hl.id}
+                    className="p-3 rounded-xl bg-slate-950/90 border border-slate-800 hover:border-purple-500/50 transition flex flex-col items-center text-center gap-2"
+                  >
+                    <div className="w-20 h-20 rounded-full p-0.5 bg-gradient-to-tr from-purple-500 via-cyan-400 to-amber-400 shadow-lg">
+                      <img
+                        src={hl.relativePath}
+                        alt={hl.title}
+                        className="w-full h-full rounded-full object-cover bg-slate-950"
+                      />
+                    </div>
+                    <div>
+                      <p className="text-xs font-black text-white">{hl.title}</p>
+                      <span className="text-[10px] font-mono text-cyan-300 block">
+                        DM: "{hl.keyword}"
+                      </span>
+                    </div>
+                    <div className="w-full flex flex-col gap-1.5 mt-auto">
+                      <a
+                        href={hl.relativePath}
+                        download={hl.fileName}
+                        className="w-full inline-flex items-center justify-center gap-1 py-1.5 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/40 text-purple-200 text-[11px] font-bold"
+                      >
+                        <Download className="w-3 h-3" /> Portada PNG
+                      </a>
+                      <button
+                        onClick={() => copyToClipboard(hl.storyCopy, `hl-${hl.id}`)}
+                        className="w-full inline-flex items-center justify-center gap-1 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 text-[10px] font-semibold"
+                      >
+                        {copiedId === `hl-${hl.id}` ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                        Copiar Copy
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* SECCIÓN 3: AUTOPUBLICADOR INSTAGRAM GRAPH API v21.0 + LOS 3 CARRUSELES DE HOY 1 DE NOVIEMBRE 2026 */}
+            <div className="p-6 rounded-2xl bg-slate-900/95 border border-cyan-500/40 space-y-5">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+                <div>
+                  <span className="text-xs font-mono uppercase text-emerald-400 flex items-center gap-1.5">
+                    <Send className="w-3.5 h-3.5" /> PASO 4 // MOTOR DE SUBIDA AUTOMÁTICA HOY DOMINGO 1 DE NOVIEMBRE DE 2026
+                  </span>
+                  <h3 className="text-xl font-black text-white mt-0.5">
+                    Carruseles de Hoy 1 de Noviembre de 2026 para @codice.anomalo (3 Carruseles = 15 Fotos 1080×1350)
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Conecta tu <strong>IG_USER_ID</strong> e <strong>IG_ACCESS_TOKEN</strong> de Meta for Developers para publicarlos con 1 clic vía API oficial, o descarga directamente las 5 imágenes y copia el título/caption de cada horario.
+                  </p>
+                </div>
+
+                {/* Selector entre Lote Inaugural (#CA-0001..0003) o Lote Especial Domingo (#CA-0019..0021) */}
+                <div className="flex items-center gap-2 bg-slate-950 p-1.5 rounded-xl border border-slate-800">
+                  <button
+                    onClick={() => setIgPackMode('launch')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                      igPackMode === 'launch'
+                        ? 'bg-cyan-500/20 text-cyan-200 border border-cyan-500/40'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    Lote Inaugural Día 1 (#CA-0001 a #CA-0003)
+                  </button>
+                  <button
+                    onClick={() => setIgPackMode('sunday')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                      igPackMode === 'sunday'
+                        ? 'bg-purple-500/20 text-purple-200 border border-purple-500/40'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    Especial Domingo Astronómico (#CA-0019 a #CA-0021)
+                  </button>
+                </div>
+              </div>
+
+              {/* Panel de Credenciales Meta Graph API v21.0 */}
+              <div className="p-4 rounded-xl bg-slate-950/90 border border-slate-800 grid grid-cols-1 lg:grid-cols-12 gap-3 items-end">
+                <div className="lg:col-span-3 space-y-1">
+                  <label className="text-[11px] font-mono text-slate-400 flex items-center gap-1">
+                    <Key className="w-3 h-3 text-cyan-400" /> IG_USER_ID (ID Profesional @codice.anomalo):
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Ej: 17841468901234567"
+                    value={igUserId}
+                    onChange={(e) => setIgUserId(e.target.value)}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-cyan-400"
+                  />
+                </div>
+
+                <div className="lg:col-span-5 space-y-1">
+                  <label className="text-[11px] font-mono text-slate-400 flex items-center gap-1">
+                    <Key className="w-3 h-3 text-amber-400" /> IG_ACCESS_TOKEN (Token Meta Graph API con instagram_content_publish):
+                  </label>
+                  <input
+                    type="password"
+                    placeholder="Pega tu Access Token EAAB... o IGA..."
+                    value={igAccessToken}
+                    onChange={(e) => setIgAccessToken(e.target.value)}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-cyan-400"
+                  />
+                </div>
+
+                <div className="lg:col-span-4 flex flex-wrap gap-2">
+                  <button
+                    onClick={handleSaveAndVerifyInstagram}
+                    disabled={isVerifyingIg}
+                    className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-cyan-300 text-xs font-bold transition"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${isVerifyingIg ? 'animate-spin' : ''}`} />
+                    Verificar Cuenta
+                  </button>
+                  <button
+                    onClick={handlePublishAllThreeToday}
+                    disabled={Boolean(publishingSlot)}
+                    className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-cyan-500 hover:opacity-95 text-white text-xs font-black shadow-lg shadow-cyan-500/20 transition"
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                    Subir los 3 de Hoy
+                  </button>
+                </div>
+              </div>
+
+              {/* Estado de Verificación o Consola de Publicación */}
+              {igAccountStatus && (
+                <div
+                  className={`p-3.5 rounded-xl border text-xs flex items-center justify-between gap-3 ${
+                    igAccountStatus.ok
+                      ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-200'
+                      : 'bg-amber-950/40 border-amber-500/40 text-amber-200'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    {igAccountStatus.ok ? (
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                    ) : (
+                      <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
+                    )}
+                    <span>
+                      {igAccountStatus.ok
+                        ? `Cuenta conectada oficialmente: ${igAccountStatus.account.username} (ID: ${igAccountStatus.account.id}) — Seguidores: ${igAccountStatus.account.followersCount} • Publicaciones: ${igAccountStatus.account.mediaCount}`
+                        : igAccountStatus.error}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {publishLogs.length > 0 && (
+                <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+                  <span className="text-[10px] font-mono uppercase text-slate-400 block">
+                    REGISTRO DE OPERACIONES INSTAGRAM GRAPH API (v21.0):
+                  </span>
+                  {publishLogs.map((log) => (
+                    <div
+                      key={log.id}
+                      className={`p-2.5 rounded-lg border text-xs flex flex-wrap items-center justify-between gap-2 ${
+                        log.ok
+                          ? 'bg-emerald-950/30 border-emerald-500/30 text-emerald-200'
+                          : 'bg-amber-950/30 border-amber-500/30 text-amber-200'
+                      }`}
+                    >
+                      <span>
+                        <strong>[{log.time} • {log.dossierCode} ({log.slot} CDMX)]</strong> {log.message}
+                      </span>
+                      {log.permalink && (
+                        <a
+                          href={log.permalink}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="underline font-bold text-cyan-300"
+                        >
+                          Ver Post en Instagram →
+                        </a>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Tarjetas de los 3 Carruseles de Hoy Domingo 1 de Noviembre de 2026 */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+                {todayNov01Carousels.map((post) => (
+                  <div
+                    key={post.dossierCode}
+                    className="p-4 rounded-2xl bg-slate-950/95 border border-slate-800 hover:border-cyan-500/40 transition flex flex-col justify-between gap-4"
+                  >
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="px-2.5 py-1 rounded-lg bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 text-[11px] font-mono font-bold">
+                          🕐 HOY 1 NOV • {post.timeCDMX} CDMX
+                        </span>
+                        <span className="text-[11px] font-mono text-amber-300 font-bold">
+                          {post.dossierCode} • DM: "{post.ctaKeyword}"
+                        </span>
+                      </div>
+
+                      <div>
+                        <span className="text-[10px] font-mono uppercase text-purple-300 block">
+                          {post.nicheName} • Arquetipo {post.archetype}
+                        </span>
+                        <h4 className="text-sm font-black text-white leading-snug mt-0.5">
+                          {post.title}
+                        </h4>
+                      </div>
+
+                      {/* Tira de las 5 Imágenes PNG (1080x1350) del Carrusel de Hoy */}
+                      <div className="grid grid-cols-5 gap-1.5">
+                        {post.relativeImagePaths.map((imgSrc, sIdx) => (
+                          <a
+                            key={sIdx}
+                            href={imgSrc}
+                            download={`${post.dossierCode.replace('#', '')}_SLIDE_0${sIdx + 1}_1080x1350.png`}
+                            title={`Descargar Slide ${sIdx + 1}/5 (1080×1350)`}
+                            className="group relative aspect-[4/5] rounded-lg overflow-hidden border border-slate-800 hover:border-cyan-400 bg-slate-900"
+                          >
+                            <img
+                              src={imgSrc}
+                              alt={`${post.title} Slide ${sIdx + 1}`}
+                              className="w-full h-full object-cover group-hover:scale-105 transition"
+                            />
+                            <span className="absolute bottom-1 right-1 px-1 py-0.2 rounded bg-black/80 text-[9px] font-mono text-white">
+                              {sIdx + 1}/5
+                            </span>
+                          </a>
+                        ))}
+                      </div>
+
+                      {/* Caption con Título y Hashtags Listo para Copiar */}
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-mono uppercase text-slate-400">
+                            Título y Caption Oficial (Listo para IG):
+                          </span>
+                          <button
+                            onClick={() => copyToClipboard(post.caption, `cap-${post.dossierCode}`)}
+                            className="text-[11px] font-bold text-cyan-400 hover:underline flex items-center gap-1"
+                          >
+                            {copiedId === `cap-${post.dossierCode}` ? (
+                              <Check className="w-3 h-3 text-emerald-400" />
+                            ) : (
+                              <Copy className="w-3 h-3" />
+                            )}
+                            Copiar Caption
+                          </button>
+                        </div>
+                        <pre className="p-2.5 rounded-xl bg-slate-900/90 border border-slate-800 text-[11px] text-slate-300 font-sans whitespace-pre-wrap max-h-36 overflow-y-auto leading-relaxed">
+                          {post.caption}
+                        </pre>
+                      </div>
+                    </div>
+
+                    {/* Botones de Acción por Carrusel */}
+                    <div className="pt-2 border-t border-slate-800/80 flex flex-col gap-2">
+                      <button
+                        onClick={() => handlePublishSingleNov01Carousel(post)}
+                        disabled={publishingSlot === post.dossierCode}
+                        className="w-full inline-flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-cyan-500 hover:opacity-95 text-white text-xs font-black shadow-md transition disabled:opacity-50"
+                      >
+                        <Send className="w-3.5 h-3.5" />
+                        {publishingSlot === post.dossierCode
+                          ? `Subiendo ${post.dossierCode} a @codice.anomalo...`
+                          : `Publicar Ahora en @codice.anomalo (${post.timeCDMX})`}
+                      </button>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          onClick={() => copyToClipboard(post.caption, `btn-cap-${post.dossierCode}`)}
+                          className="inline-flex items-center justify-center gap-1 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-200 text-[11px] font-bold"
+                        >
+                          <Copy className="w-3 h-3 text-cyan-400" /> Copiar Título/Texto
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSelectedId(post.id);
+                            setActiveSlideIdx(0);
+                            setActiveTab('EDITOR');
+                          }}
+                          className="inline-flex items-center justify-center gap-1 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-purple-300 text-[11px] font-bold"
+                        >
+                          <Layers className="w-3 h-3" /> Abrir en Estudio 4:5
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* ====================================================================
             VISTA 1: PLANIFICADOR DE LOTE SEMANAL CON PREVIEW VISUAL REAL
