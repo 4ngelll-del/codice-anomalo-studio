@@ -1,0 +1,31 @@
+{
+  "name": "codice-anomalo-studio",
+  "private": true,
+  "version": "2.0.0",
+  "type": "module",
+  "description": "Códice Anómalo Studio — Motor Viral de Contenido 4:5 para Instagram con Auditoría Multi-Agente y Cloudflare Workers",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "generate:batch": "node scripts/generate-weekly-zip.mjs",
+    "deploy": "vite build && npx wrangler deploy"
+  },
+  "dependencies": {
+    "jszip": "^3.10.1",
+    "lucide-react": "^0.468.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@resvg/resvg-js": "^2.6.2",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.17",
+    "vite": "^6.0.5",
+    "wrangler": "^3.101.0"
+  }
+}

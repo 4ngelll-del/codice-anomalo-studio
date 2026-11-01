@@ -1,0 +1,28 @@
+# wrangler.toml — Configuración de Producción para Códice Anómalo Studio
+name = "codice-anomalo-studio"
+main = "src/worker.js"
+compatibility_date = "2024-11-01"
+workers_dev = true
+
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+
+# Ejecución automática en Zona Horaria de México (America/Mexico_City = UTC-6):
+# - Domingo 22:00 CDMX (04:00 UTC Lunes): Genera los 21 carruseles de la semana
+# - Todos los días 09:00, 15:00 y 21:00 CDMX (15:00, 21:00, 03:00 UTC): Autopublica en IG Graph API
+[triggers]
+crons = [
+  "0 4 * * MON",
+  "0 3,15,21 * * *"
+]
+
+[vars]
+IG_HANDLE = "@codice.anomalo"
+TIMEZONE = "America/Mexico_City"
+SLOT_MANANA = "09:00"
+SLOT_TARDE = "15:00"
+SLOT_NOCHE = "21:00"
+BATCH_SIZE = "21"
+MIN_AUDIT_SCORE = "97"
+MODEL_ID = "gemini-2.5-flash"
